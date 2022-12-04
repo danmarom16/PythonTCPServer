@@ -52,6 +52,7 @@ def redirect(file, client_socket, client_address):
     Returns True if the file is inside the current Directory.
     If not, returns False.
 """
+#TODO: Dont accept Directories
 def is_exist(file):
     current_dir = os.getcwd() + "/files"
     path = current_dir + file
@@ -73,7 +74,7 @@ def get_content(file_path):
     else:
         with open(file_path, "r") as f:
             content = f.read()
-        return content
+        return content.encode()
         
 
 def build_req(con_stat, file_path, file_exists):
@@ -81,13 +82,14 @@ def build_req(con_stat, file_path, file_exists):
     if file_exists:
         content = get_content(file_path)
         lines_of_res =[
-            "HTTP/1.1 200 OK",
-            f"Connection: {con_stat}",
-            f"Content-Length: {len(content)}",
-            '\n',
+            "HTTP/1.1 200 OK".encode(),
+            f"Connection: {con_stat}".encode(),
+            f"Content-Length: {str(len(content))}".encode(),
+            '\n'.encode(),
             content
         ]
-        res = '\n'.join(lines_of_res)
+        res = b'\n'.join(lines_of_res)
+        print(res.decode)
         return res
     else:
         pass
@@ -100,7 +102,8 @@ def handle(file, client_socket, client_address, con_stat):
     if is_exist(file):
         file_path = get_full_path(file)
         res = build_req(con_stat, file_path, EXIST)
-        client_socket.send(res.encode())
+        print(res)
+        client_socket.send(res)
         return OK
     else:
         print(f'file "{file}" does not exist')
