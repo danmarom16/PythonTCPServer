@@ -52,11 +52,10 @@ def redirect(file, client_socket, client_address):
     Returns True if the file is inside the current Directory.
     If not, returns False.
 """
-#TODO: Dont accept Directories
 def is_exist(file):
     current_dir = os.getcwd() + "/files"
     path = current_dir + file
-    return os.path.exists(path) 
+    return os.path.isfile(path) 
 
 def get_full_path(file):
     current_dir = os.getcwd() + "/files"
@@ -77,7 +76,7 @@ def get_content(file_path):
         return content.encode()
         
 
-def build_req(con_stat, file_path, file_exists):
+def build_res(con_stat, file_path, file_exists):
     res = ""
     if file_exists:
         content = get_content(file_path)
@@ -88,11 +87,13 @@ def build_req(con_stat, file_path, file_exists):
             '\n',
         ]
         res = '\n'.join(lines_of_res).encode() + content
-        print(res)
-        return res
     else:
-        pass
-        #build 404
+        lines_of_res = [
+            "HTTP/1.1 404 Not Found",
+            f"Connection: {con_stat}",
+            '\n'
+        ]
+        res = '\n'.join(lines_of_res).encode() 
     return res
 
 def handle(file, client_socket, client_address, con_stat):
@@ -100,17 +101,14 @@ def handle(file, client_socket, client_address, con_stat):
         return redirect(file, client_socket, client_address)
     if is_exist(file):
         file_path = get_full_path(file)
-        res = build_req(con_stat, file_path, EXIST)
-        print(res)
+        res = build_res(con_stat, file_path, EXIST)
         client_socket.send(res)
         return OK
     else:
-        print(f'file "{file}" does not exist')
-        #content = ''
-        #client_socket.send(build_req(content,False))
+        res = build_res("close", None, NOT_EXIST)
+        print(res)
+        client_socket.send(res)
         return ERROR    
-
-
 
 def main():
 
@@ -131,20 +129,26 @@ def main():
         client_socket, client_address = server.accept()
         print('Connection from: ', client_address)
 
-        data = bytes.decode(client_socket.recv(100))
-        print(data)
+        # Initialized for 1st iteration
+        con_stat = CONTINUE_INTERACTION
+        res_stat = ""
 
-        file, con_stat = phrase_data(data)
+        while not is_finished(res_stat, con_stat):
+            client_socket.settimeout(1)
+            try:
+                data = bytes.decode(client_socket.recv(1024))
+                client_socket.settimeout(None)
+            except socket.timeout as e:
+                print("Client Timeout")
+                con_stat = END_INTERACTION
+                continue
 
-        # req_stat can be 200, 301 or 404
-        req_stat = handle(file, client_socket, client_address, con_stat)
-        if is_finished(req_stat, con_stat):
-            client_socket.close()
-            print('Client disconnected')
+            print(data)
+            file, con_stat = phrase_data(data)
+            # req_stat can be 200, 301 or 404
+            res_stat = handle(file, client_socket, client_address, con_stat)
 
-        #client_socket.send(data.upper())
-
-
+        client_socket.close()
 
 if __name__ == "__main__":
     main()
