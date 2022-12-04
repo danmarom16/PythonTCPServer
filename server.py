@@ -8,6 +8,8 @@ CONTINUE_INTERACTION = "keep-alive"
 OK = 200
 REDIRECT = 301
 ERROR = 404
+EXIST = True
+NOT_EXIST = False
 # -- DEFINE CONSTANTS -- #
 
 
@@ -55,32 +57,58 @@ def is_exist(file):
     path = current_dir + file
     return os.path.exists(path) 
 
-def get_content(file):
-    pass
-
-def build_req(content, is_exist):
-    pass
-
 def get_full_path(file):
     current_dir = os.getcwd() + "/files"
     path = current_dir + file
     return path
 
+def is_finished(req_stat, con_stat):
+    return req_stat == REDIRECT or req_stat == ERROR or con_stat == END_INTERACTION
 
-def handle(file, client_socket, client_address):
+def get_content(file_path):
+    if file_path.lower().endswith(('.ico', '.jpg')):
+        with open(file_path, "rb") as bf:
+            content = bf.read()
+        return content
+    else:
+        with open(file_path, "r") as f:
+            content = f.read()
+        return content
+        
+
+def build_req(con_stat, file_path, file_exists):
+    res = ""
+    if file_exists:
+        content = get_content(file_path)
+        lines_of_res =[
+            "HTTP/1.1 200 OK",
+            f"Connection: {con_stat}",
+            f"Content-Length: {len(content)}",
+            '\n',
+            content
+        ]
+        res = '\n'.join(lines_of_res)
+        return res
+    else:
+        pass
+        #build 404
+    return res
+
+def handle(file, client_socket, client_address, con_stat):
     if file == "redirect":
         return redirect(file, client_socket, client_address)
     if is_exist(file):
         file_path = get_full_path(file)
-        print(file_path)
-        #content = get_content(file)
-        #client_socket.send(build_req(content, True))
+        res = build_req(con_stat, file_path, EXIST)
+        client_socket.send(res.encode())
         return OK
     else:
         print(f'file "{file}" does not exist')
         #content = ''
         #client_socket.send(build_req(content,False))
         return ERROR    
+
+
 
 def main():
 
@@ -107,14 +135,10 @@ def main():
         file, con_stat = phrase_data(data)
 
         # req_stat can be 200, 301 or 404
-        req_stat = handle(file, client_socket, client_address)
-        if req_stat == REDIRECT or req_stat == ERROR:
+        req_stat = handle(file, client_socket, client_address, con_stat)
+        if is_finished(req_stat, con_stat):
             client_socket.close()
             print('Client disconnected')
-        else:
-            if con_stat == END_INTERACTION:
-                client_socket.close()
-                print('Client disconnected')
 
         #client_socket.send(data.upper())
 
