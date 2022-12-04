@@ -82,14 +82,13 @@ def build_req(con_stat, file_path, file_exists):
     if file_exists:
         content = get_content(file_path)
         lines_of_res =[
-            "HTTP/1.1 200 OK".encode(),
-            f"Connection: {con_stat}".encode(),
-            f"Content-Length: {str(len(content))}".encode(),
-            '\n'.encode(),
-            content
+            "HTTP/1.1 200 OK",
+            f"Connection: {con_stat}",
+            f"Content-Length: {str(len(content))}",
+            '\n',
         ]
-        res = b'\n'.join(lines_of_res)
-        print(res.decode)
+        res = '\n'.join(lines_of_res).encode() + content
+        print(res)
         return res
     else:
         pass
