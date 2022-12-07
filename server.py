@@ -14,12 +14,6 @@ NOT_EXIST = False
 
 
 # -- DEBUGG PRINTS -- #
-def pretty_print_folder(dirpath, dirnames, filenames):
-    print(
-    f"Root: {dirpath}\n"
-    f"Sub-directories: {dirnames}\n"
-    f"Files: {filenames}\n"
-)
 def prettty_print_data(data, file, con_stat):
     print('Originaly recieved: ', data)
     print('Extracted Filename: ', file)
@@ -90,7 +84,7 @@ def build_res(con_stat, file_path, file_exists):
     else:
         lines_of_res = [
             "HTTP/1.1 404 Not Found",
-            f"Connection: {con_stat}",
+            f"Connection: closed",
             '\n'
         ]
         res = '\n'.join(lines_of_res).encode() 
